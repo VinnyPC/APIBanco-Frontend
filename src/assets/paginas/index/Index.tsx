@@ -30,26 +30,23 @@ function Index() {
   const fetchData = async () => {
     try {
       let url = "http://localhost:8080/transferencia";
-      let queryParams = [];
 
       if (startDate && endDate) {
-        queryParams.push(`startDate=${startDate}`);
-        queryParams.push(`endDate=${endDate}`);
-      }
-
-      if (operador) {
-        queryParams.push(`operador=${operador}`);
-      }
-
-      if (queryParams.length > 0) {
-        url += `/transferenciasEspecificas?${queryParams.join("&")}`;
+        url += `/transferenciasEspecificas?startDate=${startDate}&endDate=${endDate}`;
       }
 
       const response = await axios.get(url);
       const data = response.data;
       console.log(data);
 
-      const mergedData = data.map((item) => ({
+      let filteredData = data;
+      if (operador) {
+        filteredData = filteredData.filter(
+          (item) => item.operador === operador
+        );
+      }
+
+      const mergedData = filteredData.map((item) => ({
         id: item.id,
         data: item.data,
         valor: item.valor,
