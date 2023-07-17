@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { DataGrid, GridColDef, GridValueGetterParams } from "@mui/x-data-grid";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
-
+import { Box, Stack } from "@mui/material";
 
 const columns: GridColDef[] = [
-  { field: "data", headerName: "Dados", width: 200 },
-  { field: "valor", headerName: "Valencia", width: 200 },
-  {
-    field: "tipo",
-    headerName: "Tipo",
-    type: "number",
-    width: 200,
-  },
+  { field: "data", headerName: "Dados", width: 250 },
+  { field: "valor", headerName: "Valencia", width: 250 },
+  { field: "tipo", headerName: "Tipo", type: "number", width: 100 },
   {
     field: "nomeResponsavel",
     headerName: "Nome do operador transacionado",
-    description: "Esta coluna possui um 'value getter' e não é ordenável.",
     sortable: false,
-    width: 200,
+    width: 300,
   },
   {
     field: "nomeOperador",
-    headerName: "Nome do operador transacionado",
-    description: "Esta coluna possui um 'value getter' e não é ordenável.",
+    headerName: "Nome do responsável",
     sortable: false,
     width: 200,
   },
@@ -30,49 +23,84 @@ const columns: GridColDef[] = [
 
 function Index() {
   const [tableData, setTableData] = useState([]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [operador, setOperador] = useState("");
 
   const fetchData = async () => {
     try {
-      const responseTransferencia = await axios.get(
-        "http://localhost:8080/transferencia"
-      );
-      const dataTransferencia = responseTransferencia.data;
-      // console.table(dataTransferencia)
+      let url = "http://localhost:8080/transferencia";
+      let queryParams = [];
 
-      const responseConta = await axios.get("http://localhost:8080/conta");
-      const dataConta = responseConta.data;
+      if (startDate && endDate) {
+        queryParams.push(`startDate=${startDate}`);
+        queryParams.push(`endDate=${endDate}`);
+      }
 
-      const mergedData = dataTransferencia.map((item) => {
-        const conta = dataConta.find((conta) => conta.idConta === item.contaId);
-        // const nomeResponsavel = conta?.nomeResponsavel || "";
-        
-        
-        console.log(item.operador)
-        return {
-          id: item.id,
-          data: item.data,
-          valor: item.valor,
-          tipo: item.tipo,
-          nomeResponsavel: item.operador,
-          nomeOperador: item.conta.nomeResponsavel,
-        };
-      });
-      
+      if (operador) {
+        queryParams.push(`operador=${operador}`);
+      }
+
+      if (queryParams.length > 0) {
+        url += `/transferenciasEspecificas?${queryParams.join("&")}`;
+      }
+
+      const response = await axios.get(url);
+      const data = response.data;
+      console.log(data);
+
+      const mergedData = data.map((item) => ({
+        id: item.id,
+        data: item.data,
+        valor: item.valor,
+        tipo: item.tipo,
+        nomeResponsavel: item.operador,
+        nomeOperador: item.conta.nomeResponsavel,
+      }));
+
       setTableData(mergedData);
     } catch (error) {
       console.log("Error fetching data:", error);
     }
   };
-  
+
+  useEffect(() => {
+    fetchData();
+  }, [startDate, endDate, operador]);
 
   return (
-    <div style={{ height: 400, width: "100%" }}>
-      <DataGrid rows={tableData} columns={columns} />
-    </div>
+    <>
+      <Stack flexDirection={"row"} padding={10} justifyContent={"space-around"}>
+        <Stack flexDirection={"column"}>
+          <label>Data inicial:</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </Stack>
+
+        <Stack flexDirection={"column"}>
+          <label>Data final:</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </Stack>
+        <Stack flexDirection={"column"}>
+          <label>Nome do operador:</label>
+          <input
+            type="text"
+            value={operador}
+            onChange={(e) => setOperador(e.target.value)}
+          />
+        </Stack>
+      </Stack>
+      <div style={{ height: 400, width: "100%" }}>
+        <DataGrid rows={tableData} columns={columns} />
+      </div>
+    </>
   );
 }
 
